@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="description" content="魔兽世界 TBC 黑暗神殿 · 塔隆·血魔「死亡之影」灵魂阶段训练模拟器">
+<meta name="theme-color" content="#0a0810">
+<title>塔隆·血魔 · 灵魂试炼</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>👻</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ══════════════ 左侧信息栏 ══════════════ -->
+  <aside class="rail rail-left">
+    <section class="panel" id="constructPanel">
+      <h2 class="panel-title">致命构造体</h2>
+      <ul id="constructList" class="construct-list"></ul>
+    </section>
+
+    <section class="panel panel-grow" id="logPanel">
+      <h2 class="panel-title">战斗记录</h2>
+      <ol id="combatLog" class="combat-log"></ol>
+    </section>
+  </aside>
+
+  <!-- ══════════════ 舞台 ══════════════ -->
+  <main id="stage">
+    <div id="viewport">
+      <canvas id="game"></canvas>
+
+      <!-- 顶部：首领框 + 计时 -->
+      <div id="topBar" class="hud">
+        <div id="bossFrame" class="boss-frame">
+          <div class="boss-portrait" aria-hidden="true"></div>
+          <div class="boss-body">
+            <div class="boss-name">塔隆·血魔 <span class="boss-lvl">‹首领›</span></div>
+            <div class="boss-hp"><div class="boss-hp-fill"></div><span class="boss-hp-text">危急</span></div>
+          </div>
+        </div>
+        <div id="runStats" class="run-stats">
+          <div class="stat"><span class="stat-label">用时</span><span class="stat-value" id="statTime">0.0</span></div>
+          <div class="stat"><span class="stat-label">最佳</span><span class="stat-value" id="statBest">—</span></div>
+          <div class="stat"><span class="stat-label">存活</span><span class="stat-value" id="statAlive">4</span></div>
+        </div>
+      </div>
+
+      <!-- 死亡之影读秒 -->
+      <div id="debuffBanner" class="debuff-banner" hidden>
+        <div class="debuff-icon" id="debuffIcon"></div>
+        <div class="debuff-copy">
+          <div class="debuff-name">死亡之影</div>
+          <div class="debuff-hint">趁现在跑得越远越好 —— 构造体会在你倒下的位置生成</div>
+        </div>
+        <div class="debuff-timer" id="debuffTimer">12</div>
+      </div>
+
+      <!-- 目标框 -->
+      <div id="targetFrame" class="target-frame" hidden>
+        <div class="tf-top">
+          <span class="tf-name" id="tfName">致命构造体 1</span>
+          <span class="tf-pct" id="tfPct">100%</span>
+        </div>
+        <div class="tf-hp"><div class="tf-hp-fill" id="tfHpFill"></div></div>
+        <div class="tf-meta">
+          <span class="tf-eta" id="tfEta">距首领 32 码</span>
+          <span class="tf-range" id="tfRange">距离 12 码</span>
+        </div>
+        <div class="tf-auras" id="tfAuras"></div>
+      </div>
+
+      <!-- 中央提示 -->
+      <div id="callout" class="callout" hidden></div>
+
+      <!-- 施法提示 -->
+      <div id="castFlash" class="cast-flash" hidden></div>
+
+      <!-- 底部操作区（窄屏时补上侧栏信息） -->
+      <div id="dock" class="dock">
+        <ul id="constructStrip" class="construct-strip"></ul>
+        <div id="actionBar" class="action-bar" hidden></div>
+      </div>
+
+      <!-- ═════ 覆盖层：标题 ═════ -->
+      <div id="titleScreen" class="overlay overlay-title">
+        <div class="overlay-inner">
+          <p class="kicker">黑暗神殿 · 第五号首领</p>
+          <h1 class="title">塔隆·血魔</h1>
+          <p class="subtitle">灵 魂 试 炼</p>
+
+          <p class="brief">
+            又是黑暗神殿里平平无奇的一天。团队第十一次冲击塔隆·血魔，
+            而这一次，<b>死亡之影</b>落在了你的头上。<br>
+            倒下之后，你将化为幽魂 —— 阻止四只<b>致命构造体</b>抵达首领，
+            否则整个团队再次全灭。
+          </p>
+
+          <div class="opt-row">
+            <span class="opt-label">难度</span>
+            <div class="seg" id="difficultySeg" role="radiogroup" aria-label="难度"></div>
+          </div>
+          <p class="opt-desc" id="difficultyDesc"></p>
+
+          <div class="opt-row">
+            <span class="opt-label">选项</span>
+            <div class="toggles">
+              <label class="chk"><input type="checkbox" id="optPractice"><span>训练模式</span></label>
+              <label class="chk"><input type="checkbox" id="optSound" checked><span>音效</span></label>
+              <label class="chk"><input type="checkbox" id="optAzerty"><span>AZERTY 键位</span></label>
+            </div>
+          </div>
+          <p class="opt-desc">训练模式下构造体抵达首领不会判负，可以反复练习循环。</p>
+
+          <div class="btn-row">
+            <button class="btn btn-primary" id="btnStart">开 始 试 炼</button>
+            <button class="btn" id="btnSpellbook">法术书</button>
+          </div>
+          <p class="hint">移动 <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / 方向键 / 点击地面　·　选中目标 <kbd>Tab</kbd>　·　技能 <kbd>1</kbd><kbd>3</kbd><kbd>4</kbd><kbd>5</kbd><kbd>7</kbd></p>
+        </div>
+      </div>
+
+      <!-- ═════ 覆盖层：法术书 ═════ -->
+      <div id="spellbookScreen" class="overlay overlay-book" hidden>
+        <div class="overlay-inner">
+          <h2 class="book-title">灵魂法术书</h2>
+          <p class="book-note">
+            这些技能来自<b>控制条</b>。如果你使用 Bartender 之类的插件，
+            请提前准备 <code>/cast</code> 宏并绑定按键，否则真打的时候会手忙脚乱。
+          </p>
+          <ul class="book-list" id="bookList"></ul>
+          <div class="book-strategy">
+            <h3>核心思路</h3>
+            <ol>
+              <li>拿到<b>死亡之影</b>后立刻朝远离首领的方向狂奔 —— 你跑出的每一码都是之后的输出时间。</li>
+              <li>开局先给四只构造体各叠满 <b>3 层灵魂之枪</b>（减速 90%），它们几乎会原地爬行。</li>
+              <li>把它们聚在一起后用<b>灵魂乱射</b>，这是唯一的高伤害 AoE。</li>
+              <li><b>灵魂锁链</b>只在你需要抢时间时用 —— 任何伤害都会打断定身。</li>
+              <li>减速快掉了就补枪：<b>宁可少打一次伤害，也不能让减速掉光</b>。</li>
+            </ol>
+          </div>
+          <div class="btn-row"><button class="btn btn-primary" id="btnBookBack">返 回</button></div>
+        </div>
+      </div>
+
+      <!-- ═════ 覆盖层：结算 ═════ -->
+      <div id="resultScreen" class="overlay overlay-result" hidden>
+        <div class="overlay-inner">
+          <p class="kicker" id="resultKicker">战斗结束</p>
+          <h2 class="result-title" id="resultTitle">全部构造体已消灭</h2>
+          <div class="grade" id="resultGrade"><span class="grade-letter">S</span><span class="grade-word">完美</span></div>
+          <p class="result-flavor" id="resultFlavor"></p>
+          <div class="result-time" id="resultTime"></div>
+          <table class="scoreboard"><tbody id="scoreboard"></tbody></table>
+          <div class="btn-row">
+            <button class="btn btn-primary" id="btnRetry">再来一次</button>
+            <button class="btn" id="btnMenu">返回标题</button>
+          </div>
+          <p class="hint"><kbd>R</kbd> 快速重来　·　<kbd>Esc</kbd> 返回标题</p>
+        </div>
+      </div>
+
+      <!-- ═════ 覆盖层：暂停 ═════ -->
+      <div id="pauseScreen" class="overlay overlay-pause" hidden>
+        <div class="overlay-inner">
+          <h2 class="result-title">已暂停</h2>
+          <div class="btn-row">
+            <button class="btn btn-primary" id="btnResume">继续</button>
+            <button class="btn" id="btnPauseRetry">重来</button>
+            <button class="btn" id="btnPauseMenu">返回标题</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ══════════════ 右侧信息栏 ══════════════ -->
+  <aside class="rail rail-right">
+    <section class="panel">
+      <h2 class="panel-title">操作</h2>
+      <dl class="keys" id="keyHelp"></dl>
+    </section>
+    <section class="panel panel-grow">
+      <h2 class="panel-title">战术提示</h2>
+      <p class="tip" id="tipText"></p>
+      <div class="tip-meta">
+        <div><span>本局施法</span><b id="metaCasts">0</b></div>
+        <div><span>空转 GCD</span><b id="metaWasted">0</b></div>
+        <div><span>总伤害</span><b id="metaDamage">0</b></div>
+      </div>
+    </section>
+  </aside>
+
+</div>
+
+<script src="js/util.js"></script>
+<script src="js/config.js"></script>
+<script src="js/art.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/entities.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/game.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
