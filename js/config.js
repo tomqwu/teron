@@ -149,6 +149,17 @@ const CFG = {
     { letter: 'C', word: '勉强', under: Infinity }
   ],
 
+  /** 界面字号档位 —— 写入 :root 的 --ui */
+  uiScales: [
+    { name: '紧凑', value: 0.9 },
+    { name: '标准', value: 1.0 },
+    { name: '大',   value: 1.15 },
+    { name: '特大', value: 1.32 }
+  ],
+
+  /** 侧栏隐藏断点，必须与 style.css 的媒体查询一致 */
+  railBreakpoint: 1280,
+
   constructNames: ['致命构造体 1', '致命构造体 2', '致命构造体 3', '致命构造体 4'],
 
   /** 首领随机喊话（战斗中随机播放） */

@@ -156,6 +156,7 @@ class Construct {
   constructor(index, x, y, speedMul) {
     this.index = index;
     this.name = CFG.constructNames[index];
+    this.shortName = '构造体 ' + (index + 1);   // 战斗记录用，避免每条都折行
     this.x = x; this.y = y;
     this.radius = CFG.construct.radius;
     this.maxHP = CFG.construct.maxHP;

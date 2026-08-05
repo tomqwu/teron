@@ -53,19 +53,20 @@ const FX = {
 
   damage(x, y, amount, kind) {
     this.texts.push({
-      x: x + U.rand(-9, 9), y: y - 10,
-      vy: -46, life: 0, max: kind === 'big' ? 1.25 : 0.95,
+      // 起点抬到贴图上方，否则数字一半被构造体挡住
+      x: x + U.rand(-10, 10), y: y - 34,
+      vy: -52, life: 0, max: kind === 'big' ? 1.25 : 0.95,
       text: U.num(amount),
-      size: kind === 'big' ? 22 : kind === 'small' ? 13 : 16,
-      color: kind === 'big' ? '#ffe27a' : kind === 'small' ? '#cfd8e4' : '#ffffff',
-      glow: kind === 'big' ? 'rgba(255,180,40,.9)' : 'rgba(0,0,0,.9)'
+      size: kind === 'big' ? 28 : kind === 'small' ? 17 : 21,
+      color: kind === 'big' ? '#ffe27a' : kind === 'small' ? '#eaf0f8' : '#ffffff',
+      glow: kind === 'big' ? 'rgba(120,60,0,.95)' : 'rgba(0,0,0,.95)'
     });
   },
 
   label(x, y, text, color) {
     this.texts.push({
       x, y: y - 16, vy: -30, life: 0, max: 1.2,
-      text, size: 13, color: color || '#8bf04a', glow: 'rgba(0,0,0,.9)'
+      text, size: 17, color: color || '#8bf04a', glow: 'rgba(0,0,0,.9)'
     });
   },
 
@@ -196,7 +197,8 @@ const FX = {
       const scale = k < .12 ? U.lerp(1.5, 1, k / .12) : 1;
       ctx.globalAlpha = U.clamp(a, 0, 1);
       ctx.font = `700 ${t.size * scale}px "Bahnschrift","DIN Alternate",system-ui,sans-serif`;
-      ctx.lineWidth = 3.5;
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = Math.max(4, t.size * 0.28);
       ctx.strokeStyle = t.glow;
       ctx.strokeText(t.text, t.x, t.y);
       ctx.fillStyle = t.color;

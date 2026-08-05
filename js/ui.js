@@ -28,7 +28,8 @@ const UI = {
       tipText: U.$('#tipText'),
       titleScreen: U.$('#titleScreen'), spellbookScreen: U.$('#spellbookScreen'),
       resultScreen: U.$('#resultScreen'), pauseScreen: U.$('#pauseScreen'),
-      difficultySeg: U.$('#difficultySeg'), difficultyDesc: U.$('#difficultyDesc')
+      difficultySeg: U.$('#difficultySeg'), difficultyDesc: U.$('#difficultyDesc'),
+      fontSeg: U.$('#fontSeg')
     };
 
     this.buildActionBar();
@@ -37,6 +38,7 @@ const UI = {
     this.buildKeyHelp();
     this.buildSpellbook();
     this.buildDifficulty();
+    this.buildFontScale();
     this.nextTip();
     this.d.debuffIcon.style.backgroundImage = `url(${Art.icons.shadowOfDeath.toDataURL()})`;
     this.d.debuffIcon.style.backgroundSize = 'cover';
@@ -163,11 +165,11 @@ const UI = {
     const dl = U.$('#keyHelp');
     if (!dl) return;
     const items = [
-      ['移动', 'W A S D / 方向键 / 点击地面'],
-      ['切换目标', 'Tab · Shift+Tab'],
-      ['最紧急目标', '` 或 Q'],
+      ['移动', 'WASD / 方向键'],
+      ['切换目标', 'Tab / Shift+Tab'],
+      ['最紧急', '` 或 Q'],
       ['指定目标', 'F1 – F4'],
-      ['技能', '1 · 3 · 4 · 5 · 7'],
+      ['技能', '1 3 4 5 7'],
       ['暂停', 'Esc'],
       ['重来', 'R']
     ];
@@ -219,6 +221,23 @@ const UI = {
     this.d.difficultyDesc.textContent = CFG.difficulties[index].desc;
   },
 
+  buildFontScale() {
+    const seg = this.d.fontSeg;
+    if (!seg) return;
+    seg.innerHTML = '';
+    CFG.uiScales.forEach((s, i) => {
+      const b = U.el('button', null, s.name);
+      b.type = 'button';
+      b.addEventListener('click', () => this.game.setUiScale(i));
+      seg.appendChild(b);
+    });
+  },
+
+  syncFontScale(index) {
+    if (!this.d.fontSeg) return;
+    U.$$('button', this.d.fontSeg).forEach((b, i) => b.classList.toggle('on', i === index));
+  },
+
   /* ═══════════ 每帧更新 ═══════════ */
 
   update(dt) {
@@ -252,7 +271,7 @@ const UI = {
     }
 
     // 技能条
-    if (g.phase === 'fight' || (g.phase === 'over' && !this.d.actionBar.hidden)) {
+    if (g.phase === 'fight') {
       this.updateActionBar(g);
     }
 
@@ -423,6 +442,11 @@ const UI = {
 
   clearLog() { if (this.d.combatLog) this.d.combatLog.innerHTML = ''; },
 
+  /** 用 class 而不是 hidden —— 隐藏时保留占位，底部留白高度才稳定 */
+  setActionBar(visible) {
+    this.d.actionBar.classList.toggle('off', !visible);
+  },
+
   callout(text) {
     const el = this.d.callout;
     el.hidden = false;
@@ -462,16 +486,23 @@ const UI = {
 
   /* ═══════════ 覆盖层 ═══════════ */
 
+  OVERLAYS: ['titleScreen', 'spellbookScreen', 'resultScreen', 'pauseScreen'],
+
   show(which) {
-    for (const k of ['titleScreen', 'spellbookScreen', 'resultScreen', 'pauseScreen']) {
-      this.d[k].hidden = (k !== which);
-    }
+    for (const k of this.OVERLAYS) this.d[k].hidden = (k !== which);
+    this.syncOverlaid();
   },
 
   hideAll() {
-    for (const k of ['titleScreen', 'spellbookScreen', 'resultScreen', 'pauseScreen']) {
-      this.d[k].hidden = true;
-    }
+    for (const k of this.OVERLAYS) this.d[k].hidden = true;
+    this.syncOverlaid();
+  },
+
+  /** 有浮层时给 #viewport 打标记，CSS 据此收掉底层 HUD */
+  syncOverlaid() {
+    const any = this.OVERLAYS.some(k => !this.d[k].hidden);
+    const vp = U.$('#viewport');
+    if (vp) vp.classList.toggle('overlaid', any);
   },
 
   showResult(won, g) {

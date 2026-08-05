@@ -21,6 +21,7 @@ const Game = {
   stats: null,
 
   difficultyIndex: 1,
+  uiScaleIndex: 1,
   practice: false,
   azerty: false,
   best: null,
@@ -43,6 +44,8 @@ const Game = {
     Nav.build();
 
     this.difficultyIndex = U.store.get('difficulty', 1);
+    this.uiScaleIndex = U.clamp(U.store.get('uiScale', 1), 0, CFG.uiScales.length - 1);
+    this.applyUiScale();
     this.practice = U.store.get('practice', false);
     this.azerty = U.store.get('azerty', false);
     const soundOn = U.store.get('sound', true);
@@ -55,6 +58,7 @@ const Game = {
     this.resetRun(false);
     UI.init(this);
     UI.syncDifficulty(this.difficultyIndex);
+    UI.syncFontScale(this.uiScaleIndex);
     this.loadBest();
 
     this.bindDOM();
@@ -78,10 +82,24 @@ const Game = {
     this.loadBest();
   },
 
+  applyUiScale() {
+    document.documentElement.style.setProperty('--ui', CFG.uiScales[this.uiScaleIndex].value);
+  },
+
+  setUiScale(i) {
+    this.uiScaleIndex = i;
+    U.store.set('uiScale', i);
+    this.applyUiScale();
+    UI.syncFontScale(i);
+    // 字号变了 → 底部操作区高度变了 → 场地留白要重算
+    requestAnimationFrame(() => this.resize());
+  },
+
   bindDOM() {
     U.$('#btnStart').addEventListener('click', () => this.start());
     U.$('#btnSpellbook').addEventListener('click', () => UI.show('spellbookScreen'));
     U.$('#btnBookBack').addEventListener('click', () => UI.show('titleScreen'));
+    U.$('#btnBookClose').addEventListener('click', () => UI.show('titleScreen'));
     U.$('#btnRetry').addEventListener('click', () => this.start());
     U.$('#btnMenu').addEventListener('click', () => this.toTitle());
     U.$('#btnResume').addEventListener('click', () => this.resume());
@@ -123,7 +141,7 @@ const Game = {
     this.resetRun(true);
     UI.clearLog();
     UI.hideAll();
-    UI.d.actionBar.hidden = true;
+    UI.setActionBar(false);
     this.phase = 'debuff';
     this.debuffLeft = this.difficulty.debuff;
     this._lastTick = Math.ceil(this.debuffLeft);
@@ -132,7 +150,7 @@ const Game = {
     Sfx.startAmbient();
     UI.callout('死亡之影！');
     UI.log('塔隆·血魔对你施放了 <b>死亡之影</b>', 'warn');
-    UI.log('立刻远离首领 —— 构造体会在你倒下的位置生成', 'warn');
+    UI.log('立刻远离首领，构造体会在你倒下处生成', 'warn');
     UI.setBest(this.best);
   },
 
@@ -140,7 +158,7 @@ const Game = {
     this.phase = 'title';
     Sfx.stopAmbient();
     this.resetRun(true);
-    UI.d.actionBar.hidden = true;
+    UI.setActionBar(false);
     UI.show('titleScreen');
   },
 
@@ -179,7 +197,7 @@ const Game = {
       return c;
     });
 
-    UI.d.actionBar.hidden = false;
+    UI.setActionBar(true);
     FX.ring(this.player.x, this.player.y, 4, 90, '190,140,255', .8, 5);
     FX.burst(this.player.x, this.player.y, { n: 40, color: '200,160,255', speed0: 60, speed1: 240, life0: .5, life1: 1.2 });
     FX.kick(7);
@@ -187,7 +205,7 @@ const Game = {
     Sfx.play('spawn');
 
     UI.callout('你倒下了 —— 四只构造体出现');
-    UI.log('你化为幽魂，<b>4 只致命构造体</b>从你的尸体中爬出', 'warn');
+    UI.log('你化为幽魂，<b>4 只构造体</b>已出现', 'warn');
     this.setTarget(this.mostUrgent(), true);
   },
 
@@ -278,14 +296,14 @@ const Game = {
     FX.burst(c.x, c.y, { n: kind === 'big' ? 14 : 7, color: '255,225,150', speed0: 30, speed1: 120, life0: .2, life1: .45, r0: 1, r1: 2.4 });
     Sfx.play(kind === 'big' ? 'impact_big' : 'impact');
     if (!c.alive) {
-      UI.log(`<span class="kill">${c.name} 被消灭</span>`, '');
+      UI.log(`<span class="kill">${c.shortName} 已消灭</span>`, '');
       if (this.target === c) this.setTarget(this.mostUrgent(), true);
     }
   },
 
   castStrike(ab) {
     const t = this.target;
-    UI.log(`你对 ${t.name} 施放了 <span class="cast">${ab.name}</span>`, '');
+    UI.log(`<span class="cast">${ab.name}</span> → ${t.shortName}`, '');
     const a = Math.atan2(t.y - this.player.y, t.x - this.player.x);
     FX.burst(t.x, t.y, { n: 12, color: '255,180,220', angle: a, speed0: 60, speed1: 180, life0: .15, life1: .4 });
     this.hit(t, this.roll(ab), 'small');
@@ -293,7 +311,7 @@ const Game = {
 
   castLance(ab) {
     const t = this.target;
-    UI.log(`你对 ${t.name} 施放了 <span class="cast">${ab.name}</span>`, '');
+    UI.log(`<span class="cast">${ab.name}</span> → ${t.shortName}`, '');
     FX.bolt(this.player.x, this.player.y, t, ab.travel, '111,227,245', () => {
       if (!t.alive) return;
       t.applySlow(ab, this.clock);
@@ -306,8 +324,8 @@ const Game = {
     const R = ab.range * CFG.YARD;
     FX.ring(this.player.x, this.player.y, 6, R, '165,102,240', .55, 4);
     const hits = this.aliveList().filter(c => U.dist(this.player.x, this.player.y, c.x, c.y) <= R);
-    UI.log(`你施放了 <span class="cast">${ab.name}</span>，命中 ${hits.length} 个目标`, '');
-    if (!hits.length) UI.log('灵魂锁链没有命中任何目标', 'warn');
+    UI.log(`<span class="cast">${ab.name}</span> · 命中 ${hits.length} 个`, '');
+    if (!hits.length) UI.log('灵魂锁链 · 未命中', 'warn');
     for (const c of hits) {
       // 先结算伤害，再上定身 —— 否则会被自己的伤害立刻打断
       this.hit(c, this.roll(ab), 'small');
@@ -323,8 +341,8 @@ const Game = {
     FX.ring(this.player.x, this.player.y, 6, R, '57,230,184', .5, 3);
     FX.kick(4);
     const hits = this.aliveList().filter(c => U.dist(this.player.x, this.player.y, c.x, c.y) <= R);
-    UI.log(`你施放了 <span class="cast">${ab.name}</span>，命中 ${hits.length} 个目标`, '');
-    if (!hits.length) UI.log('灵魂乱射没有命中任何目标', 'warn');
+    UI.log(`<span class="cast">${ab.name}</span> · 命中 ${hits.length} 个`, '');
+    if (!hits.length) UI.log('灵魂乱射 · 未命中', 'warn');
     for (const c of hits) {
       FX.bolt(this.player.x, this.player.y, c, ab.travel, '57,230,184', () => {
         if (c.alive) this.hit(c, this.roll(ab), 'big');
@@ -333,7 +351,7 @@ const Game = {
   },
 
   castShield(ab) {
-    UI.log(`你施放了 <span class="cast">${ab.name}</span>（本模拟中无效果）`, '');
+    UI.log(`<span class="cast">${ab.name}</span> · 本模拟中无效果`, '');
     FX.ring(this.player.x, this.player.y, 4, 34, '143,180,255', .5, 3);
   },
 
@@ -377,7 +395,7 @@ const Game = {
       // 首领随机喊话
       if (this.fightTime > this.bossLineAt) {
         this.bossLineAt = this.fightTime + U.rand(11, 18);
-        UI.log(`<b>塔隆·血魔</b>：${U.pick(CFG.bossLines)}`, 'warn');
+        UI.log(`<b>血魔</b>：${U.pick(CFG.bossLines)}`, 'warn');
       }
 
       this.checkEnd();
@@ -403,7 +421,7 @@ const Game = {
           Nav.resolve(c);
           c.startPath = Nav.pathLength(c.x, c.y);
           FX.ring(B.x, B.y, 8, 70, '220,60,50', .6, 4);
-          UI.log(`<span class="warn">${c.name} 抵达了首领</span> —— 训练模式，已推回门口（第 ${this.stats.leaks} 次）`, '');
+          UI.log(`<span class="warn">${c.shortName} 漏过首领</span> · 已推回门口（第 ${this.stats.leaks} 次）`, '');
           Sfx.play('error');
         } else {
           this.breaker = c;
@@ -418,7 +436,7 @@ const Game = {
   finish(won) {
     this.phase = 'over';
     this.won = won;
-    UI.d.actionBar.hidden = true;
+    UI.setActionBar(false);
     Sfx.stopAmbient();
     Sfx.play(won ? 'win' : 'lose');
     FX.kick(won ? 5 : 10);
@@ -442,20 +460,50 @@ const Game = {
 
   /* ── 渲染 ─────────────────────────── */
 
+  /**
+   * 量出底部操作区与目标框的真实高度，写成 CSS 变量。
+   * 字号档位一变，这两个值就跟着变，窄屏的 HUD 定位才不会串位。
+   */
+  measureDock() {
+    const vp = U.$('#viewport');
+    const dock = U.$('#dock');
+    const tf = UI.d && UI.d.targetFrame;
+
+    const dockH = dock ? dock.offsetHeight : 150;
+
+    let tfH = this._tfH || 130;
+    if (tf) {
+      const wasHidden = tf.hidden;
+      if (wasHidden) { tf.style.visibility = 'hidden'; tf.hidden = false; }
+      tfH = tf.offsetHeight || tfH;
+      if (wasHidden) { tf.hidden = true; tf.style.visibility = ''; }
+      this._tfH = tfH;
+    }
+
+    if (vp) {
+      vp.style.setProperty('--dock-h', dockH + 'px');
+      vp.style.setProperty('--tf-h', tfH + 'px');
+    }
+    return { dockH, tfH };
+  },
+
   resize() {
     const rect = this.canvas.getBoundingClientRect();
     const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
     this.canvas.width = Math.max(1, Math.round(rect.width * dpr));
     this.canvas.height = Math.max(1, Math.round(rect.height * dpr));
-    this.scale = Math.min(rect.width / CFG.W, rect.height / CFG.H);
-    this.ox = (rect.width - CFG.W * this.scale) / 2;
-    // 窄屏时底部要留给技能条 + 构造体条，把场地在剩余空间里居中
-    const reserve = window.innerWidth <= 1180 ? 132 : 0;
+    // 侧栏隐藏后，底部要留给构造体条 + 技能条（窄竖屏还要再让出目标框）。
+    // 场地跟着缩小，而不是被 HUD 盖在上面。技能条隐藏时也占位（.off 只是
+    // visibility），所以这个高度在一局里不会跳。
+    const { dockH, tfH } = this.measureDock();
+    const narrow = window.innerWidth <= CFG.railBreakpoint;
+    const stacked = window.innerWidth <= 760 || window.innerHeight <= 640;
+    const reserve = narrow ? dockH + (stacked ? tfH + 12 : 0) : 0;
+
+    this.scale = Math.min(rect.width / CFG.W, Math.max(160, rect.height - reserve) / CFG.H);
     const drawnH = CFG.H * this.scale;
-    const slackY = rect.height - drawnH;
-    this.oy = slackY > reserve + 40
-      ? Math.max(0, (rect.height - reserve - drawnH) / 2)
-      : slackY / 2;
+    this.ox = (rect.width - CFG.W * this.scale) / 2;
+    this.oy = Math.max(0, (rect.height - reserve - drawnH) / 2);
     this.dpr = dpr;
     this.cssW = rect.width; this.cssH = rect.height;
   },
@@ -496,7 +544,18 @@ const Game = {
       if (c.alpha <= 0.01 && !c.alive) continue;
       if (this.target === c && c.alive) this.drawTargetRing(ctx, c, t);
       Art.drawConstruct(ctx, c, t);
-      if (c.alive) this.drawNameplate(ctx, c);
+    }
+    // 名牌单独一轮，且做防重叠错层 —— 四只挤成一堆时血条不会叠在一起
+    const plates = [];
+    for (const c of this.constructs) {
+      if (!c.alive) continue;
+      let py = c.y - 30;
+      for (let guard = 0; guard < 6; guard++) {
+        if (!plates.some(p => Math.abs(p.x - c.x) < 44 && Math.abs(p.y - py) < 15)) break;
+        py -= 15;
+      }
+      plates.push({ x: c.x, y: py });
+      this.drawNameplate(ctx, c, py);
     }
 
     // 玩家
@@ -604,24 +663,27 @@ const Game = {
     ctx.restore();
   },
 
-  drawNameplate(ctx, c) {
-    const w = 30, h = 3.4, x = c.x - w / 2, y = c.y - 26;
+  drawNameplate(ctx, c, plateY) {
+    const w = 36, h = 4.4, x = c.x - w / 2, y = plateY;
     ctx.save();
-    ctx.fillStyle = 'rgba(0,0,0,.62)';
-    ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
+    ctx.fillStyle = 'rgba(0,0,0,.7)';
+    ctx.fillRect(x - 1.2, y - 1.2, w + 2.4, h + 2.4);
     const pct = c.hpPct;
     ctx.fillStyle = pct > .5 ? '#3ec24c' : pct > .2 ? '#e0b33a' : '#d5473a';
     ctx.fillRect(x, y, w * pct, h);
     // 编号
-    ctx.font = '700 9px "Bahnschrift",system-ui,sans-serif';
+    ctx.font = '700 13px "Bahnschrift",system-ui,sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(255,255,255,.75)';
-    ctx.fillText(String(c.index + 1), c.x, y - 4);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(0,0,0,.85)';
+    ctx.strokeText(String(c.index + 1), c.x, y - 6);
+    ctx.fillStyle = 'rgba(255,255,255,.92)';
+    ctx.fillText(String(c.index + 1), c.x, y - 6);
     // 减速层数
     if (c.slowStacks) {
       ctx.fillStyle = 'rgba(111,227,245,.95)';
       for (let i = 0; i < c.slowStacks; i++) {
-        ctx.fillRect(x + w + 2 + i * 4, y, 2.6, h);
+        ctx.fillRect(x + w + 2.5 + i * 5, y, 3.2, h);
       }
     }
     ctx.restore();
@@ -676,7 +738,9 @@ const Game = {
       }
       if (code === 'Escape') {
         e.preventDefault();
-        if (this.phase === 'paused') this.resume();
+        // 法术书内容较长需要滚动，返回按钮可能在屏幕外 —— Esc 一定要能退出
+        if (!UI.d.spellbookScreen.hidden) UI.show('titleScreen');
+        else if (this.phase === 'paused') this.resume();
         else if (this.phase === 'fight' || this.phase === 'debuff') this.pause();
         else if (this.phase === 'over') this.toTitle();
         return;

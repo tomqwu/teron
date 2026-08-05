@@ -80,7 +80,7 @@
       <!-- 底部操作区（窄屏时补上侧栏信息） -->
       <div id="dock" class="dock">
         <ul id="constructStrip" class="construct-strip"></ul>
-        <div id="actionBar" class="action-bar" hidden></div>
+        <div id="actionBar" class="action-bar off"></div>
       </div>
 
       <!-- ═════ 覆盖层：标题 ═════ -->
@@ -104,6 +104,11 @@
           <p class="opt-desc" id="difficultyDesc"></p>
 
           <div class="opt-row">
+            <span class="opt-label">字号</span>
+            <div class="seg" id="fontSeg" role="radiogroup" aria-label="界面字号"></div>
+          </div>
+
+          <div class="opt-row">
             <span class="opt-label">选项</span>
             <div class="toggles">
               <label class="chk"><input type="checkbox" id="optPractice"><span>训练模式</span></label>
@@ -117,14 +122,20 @@
             <button class="btn btn-primary" id="btnStart">开 始 试 炼</button>
             <button class="btn" id="btnSpellbook">法术书</button>
           </div>
-          <p class="hint">移动 <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / 方向键 / 点击地面　·　选中目标 <kbd>Tab</kbd>　·　技能 <kbd>1</kbd><kbd>3</kbd><kbd>4</kbd><kbd>5</kbd><kbd>7</kbd></p>
+          <p class="hint">
+            <span class="nb">移动 <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / 方向键 / 点击地面</span>
+            <span class="nb">选中目标 <kbd>Tab</kbd></span>
+            <span class="nb">技能 <kbd>1</kbd><kbd>3</kbd><kbd>4</kbd><kbd>5</kbd><kbd>7</kbd></span>
+          </p>
         </div>
       </div>
 
       <!-- ═════ 覆盖层：法术书 ═════ -->
       <div id="spellbookScreen" class="overlay overlay-book" hidden>
         <div class="overlay-inner">
+          <button class="overlay-close" id="btnBookClose" type="button" aria-label="返回">✕</button>
           <h2 class="book-title">灵魂法术书</h2>
+          <p class="book-scroll-hint">内容较长，可上下滚动　·　<kbd>Esc</kbd> 返回</p>
           <p class="book-note">
             这些技能来自<b>控制条</b>。如果你使用 Bartender 之类的插件，
             请提前准备 <code>/cast</code> 宏并绑定按键，否则真打的时候会手忙脚乱。
