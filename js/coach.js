@@ -60,8 +60,12 @@ const Coach = {
     if (!this.isTutorial(g)) return;
     const s = this.STEPS[this.step];
     if (!s) return;
-    // 步骤 1 只在死亡之影阶段判定；其余在战斗中判定
-    if (s.phase === 'debuff' && g.phase !== 'debuff') return;
+    // 死亡之影阶段的步骤：一旦开打，窗口就关了 —— 没做到也要放行，
+    // 否则跑得不够远的玩家会被永远卡在第一步。
+    if (s.phase === 'debuff') {
+      if (g.phase === 'fight') { this.step++; return; }
+      if (g.phase !== 'debuff') return;
+    }
     if (s.phase === 'fight' && g.phase !== 'fight') return;
     // 开场类步骤有时间窗；窗口过了就静默跳过，教学永远不会卡住
     if (s.skipAfter != null && g.fightTime > s.skipAfter) {

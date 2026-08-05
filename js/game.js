@@ -525,10 +525,11 @@ const Game = {
     // 侧栏隐藏后，底部要留给构造体条 + 技能条（窄竖屏还要再让出目标框）。
     // 场地跟着缩小，而不是被 HUD 盖在上面。技能条隐藏时也占位（.off 只是
     // visibility），所以这个高度在一局里不会跳。
+    // 技能条永远盖在场地底部 —— 如果你一路跑到大厅最深处倒下，
+    // 构造体就会生成在被它遮住的那一条里。所以任何宽度都要给它留位。
     const { dockH, tfH } = this.measureDock();
-    const narrow = window.innerWidth <= CFG.railBreakpoint;
     const stacked = window.innerWidth <= 760 || window.innerHeight <= 640;
-    const reserve = narrow ? dockH + (stacked ? tfH + 12 : 0) : 0;
+    const reserve = dockH + (stacked ? tfH + 12 : 0);
 
     this.scale = Math.min(rect.width / CFG.W, Math.max(160, rect.height - reserve) / CFG.H);
     const drawnH = CFG.H * this.scale;

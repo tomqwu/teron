@@ -10,6 +10,31 @@
 
 ---
 
+## 长什么样
+
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/01-title-zh.jpg" alt="标题界面"><br>
+<sub><b>标题界面</b> —— 四步速览讲清楚你到底要做什么，五档难度第一档是带引导的教学</sub></td>
+<td width="50%"><img src="docs/screenshots/03-tutorial-run.jpg" alt="死亡之影阶段"><br>
+<sub><b>死亡之影阶段</b> —— 地面箭头指路，读数实时告诉你离首领多远、够不够远</sub></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/04-tutorial-opener.jpg" alt="教学步骤"><br>
+<sub><b>教学</b> —— 六步走完整套循环，每步高亮对应技能格</sub></td>
+<td><img src="docs/screenshots/05-fight-coach.jpg" alt="战斗与实时提示"><br>
+<sub><b>实时提示</b> —— 按紧急程度算出下一个该按的键；左栏是四只的血量、减速层数与抵达倒计时</sub></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/06-result.jpg" alt="结算"><br>
+<sub><b>结算</b> —— 每只的击杀时间、DPS、施法次数与空转 GCD</sub></td>
+<td><img src="docs/screenshots/07-spellbook-en.jpg" alt="Spellbook"><br>
+<sub><b>法术书（English）</b> —— 界面可随时切换中英，技能名双语对照</sub></td>
+</tr>
+</table>
+
+---
+
 ## 这是什么
 
 原版是 [teron.faldorn.net](https://teron.faldorn.net/terongame/) 上的英文小游戏。
@@ -17,7 +42,8 @@
 
 * **零依赖、零构建** —— 纯 HTML / CSS / JavaScript，没有 Phaser、没有打包器、没有 npm。
 * **零外部素材** —— 场景、角色、法术图标全部由 Canvas 程序化生成；
-  音效由 WebAudio 实时合成。整个仓库不到 150 KB，离线也能跑。
+  音效由 WebAudio 实时合成。游戏本体（HTML + CSS + JS）不到 200 KB，离线也能跑
+  —— 仓库里唯一的图片是上面这几张 README 截图。
 * **数值忠于原作** —— 构造体 65000 血、3.5 码/秒，灵魂之枪 6175–6825 且
   30% 减速可叠 3 层，灵魂锁链的定身会被任何伤害打断……都和游戏里一致。
 

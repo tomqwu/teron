@@ -111,8 +111,11 @@ const CFG = {
       travel: 420,
       stats: { zh: '12 码范围 · 群体高伤害 · 冷却 15 秒',
                en: '12 yd AoE · heavy damage · 15s cooldown' },
-      desc: { zh: '唯一的高伤害群体技能。尽量等构造体聚成一堆时再放，一次打满四个才算不亏。',
-              en: 'Your only real AoE. Hold it until the constructs bunch up — anything less than four targets is wasted.' }
+      desc: { zh: '唯一的高伤害群体技能。开场四只全叠在你倒下的那一点 —— 那是全场唯一保证打满四个的一发，'
+                + '第一个公共冷却就该放掉。之后等它们被减速重新聚拢再放，少于三个都算亏。',
+              en: 'Your only real AoE. At the spawn all four are stacked on the spot you died — that is the one cast '
+                + 'guaranteed to hit four, so spend your very first GCD on it. After that, wait until they clump again; '
+                + 'fewer than three targets is a waste.' }
     },
     {
       id: 'shield', key: '7', code: 'Digit7',
@@ -132,8 +135,8 @@ const CFG = {
       id: 'tutorial', name: { zh: '教学', en: 'Tutorial' },
       speedMul: 0.55, debuff: 16, spawnSpread: 20, timeScale: 1.6,
       tutorial: true, forgiving: true,
-      desc: { zh: '一步一步带你走完整套循环：先跑远、再叠满减速、然后乱射。构造体很慢，也不会判负。',
-              en: 'Walks you through the whole rotation step by step: run, stack slows, then volley. Constructs are slow and you cannot lose.' }
+      desc: { zh: '一步一步带你走完整套循环：先跑远、开场乱射、再叠满减速。构造体很慢，也不会判负。',
+              en: 'Walks you through the whole rotation step by step: run, open with Volley, then stack slows. Constructs are slow and you cannot lose.' }
     },
     {
       id: 'novice', name: { zh: '新手', en: 'Novice' },
@@ -206,20 +209,20 @@ const CFG = {
   tips: {
     zh: [
       '拿到<b>死亡之影</b>后立刻朝远离首领的方向跑，你多跑一码，之后就多一秒输出时间。',
-      '开局第一件事是给四只构造体<b>各叠满三层灵魂之枪</b>，而不是急着打伤害。',
+      '倒下瞬间四只全叠在同一点 —— <b>第一个公共冷却就按 5</b>，这是全场唯一保证打满四个的乱射。',
       '减速持续 <b>9 秒</b>。盯着目标框上的层数计时，掉到 2 秒就该补枪了。',
       '<b>任何伤害都会打断灵魂锁链的定身</b>，定身后别急着对同一个目标输出。',
-      '<b>灵魂乱射</b>只有 12 码半径，等它们挤成一堆再放，一次覆盖四个。',
+      '<b>灵魂锁链是保险，不是输出</b>。开场强插一个实测慢 1 秒；要用就趁它们满速时用。',
       '<b>Tab</b> 循环切换目标，<b>~</b> 直接锁定离首领最近的那一只。',
       '构造体不会追你 —— 它们只认首领。所以你可以贴脸输出，不用拉扯。',
       '技能在控制条上是 <b>1 / 3 / 4 / 5 / 7</b>，真打之前记得先做好宏和键位。'
     ],
     en: [
       'Run the instant you get <b>Shadow of Death</b> — every extra yard is another second of casting time later.',
-      'Your opening is <b>three Spirit Lance stacks on all four</b>, not damage. Damage comes after.',
+      'The instant you drop, all four are stacked on one spot — <b>spend your first GCD on 5</b>, the only Volley guaranteed to hit four.',
       'The slow lasts <b>9 seconds</b>. Watch the stack timer on the target frame and refresh at 2s.',
       '<b>Any damage breaks Spirit Chains</b> — do not follow a root with damage on that same target.',
-      '<b>Spirit Volley</b> has a 12 yd radius. Wait for them to bunch up so one cast hits all four.',
+      '<b>Chains is insurance, not damage.</b> Forcing it in the opener measurably costs ~1s — save it, and use it while they are still fast.',
       '<b>Tab</b> cycles targets; <b>~</b> jumps straight to whichever is closest to the boss.',
       'Constructs never chase you — they only want the boss. You can stand right on top of them.',
       'The keys are <b>1 / 3 / 4 / 5 / 7</b> on the possess bar. Set up your macros before the real pull.'
