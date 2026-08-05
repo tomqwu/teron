@@ -29,7 +29,8 @@ const UI = {
       titleScreen: U.$('#titleScreen'), spellbookScreen: U.$('#spellbookScreen'),
       resultScreen: U.$('#resultScreen'), pauseScreen: U.$('#pauseScreen'),
       difficultySeg: U.$('#difficultySeg'), difficultyDesc: U.$('#difficultyDesc'),
-      fontSeg: U.$('#fontSeg')
+      fontSeg: U.$('#fontSeg'), langSeg: U.$('#langSeg'),
+      coach: U.$('#coach'), exitBtn: U.$('#btnExit')
     };
 
     this.buildActionBar();
@@ -39,6 +40,7 @@ const UI = {
     this.buildSpellbook();
     this.buildDifficulty();
     this.buildFontScale();
+    this.buildLangSeg();
     this.nextTip();
     this.d.debuffIcon.style.backgroundImage = `url(${Art.icons.shadowOfDeath.toDataURL()})`;
     this.d.debuffIcon.style.backgroundSize = 'cover';
@@ -52,7 +54,7 @@ const UI = {
     for (const ab of CFG.abilities) {
       const slot = U.el('div', 'slot');
       slot.dataset.id = ab.id;
-      slot.title = `${ab.name}（${ab.key}）`;
+      slot.title = `${L(ab.name)} (${ab.key})`;
 
       const icon = Art.icons[ab.id].cloneNode();
       icon.getContext('2d').drawImage(Art.icons[ab.id], 0, 0);
@@ -87,7 +89,7 @@ const UI = {
       li.innerHTML =
         '<div class="cst-top"><span class="cst-name"></span><span class="cst-hpn"></span></div>' +
         '<div class="bar"><i></i></div>' +
-        '<div class="cst-approach"><span>推进</span><div class="bar"><i></i></div><span class="cst-eta"></span></div>' +
+        '<div class="cst-approach"><span class="cst-aplabel"></span><div class="bar"><i></i></div><span class="cst-eta"></span></div>' +
         '<div class="cst-auras"></div>';
       li.addEventListener('click', () => {
         const c = this.game.constructs[i];
@@ -100,6 +102,7 @@ const UI = {
         hp: U.$('.bar > i', li),
         prog: U.$('.cst-approach .bar > i', li),
         eta: U.$('.cst-eta', li),
+        aplabel: U.$('.cst-aplabel', li),
         auras: U.$('.cst-auras', li)
       });
     }
@@ -165,18 +168,15 @@ const UI = {
     const dl = U.$('#keyHelp');
     if (!dl) return;
     const items = [
-      ['移动', 'WASD / 方向键'],
-      ['切换目标', 'Tab / Shift+Tab'],
-      ['最紧急', '` 或 Q'],
-      ['指定目标', 'F1 – F4'],
-      ['技能', '1 3 4 5 7'],
-      ['暂停', 'Esc'],
-      ['重来', 'R']
+      ['keys.move', 'keys.moveV'], ['keys.cycle', 'keys.cycleV'],
+      ['keys.urgent', 'keys.urgentV'], ['keys.pick', 'keys.pickV'],
+      ['keys.abilities', 'keys.abilitiesV'], ['keys.pause', 'keys.pauseV'],
+      ['keys.restart', 'keys.restartV']
     ];
     dl.innerHTML = '';
     for (const [k, v] of items) {
-      dl.appendChild(U.el('dt', null, k));
-      dl.appendChild(U.el('dd', null, v));
+      dl.appendChild(U.el('dt', null, T(k)));
+      dl.appendChild(U.el('dd', null, T(v)));
     }
   },
 
@@ -195,11 +195,12 @@ const UI = {
 
       const body = U.el('div');
       const nm = U.el('div', 'book-name');
-      nm.textContent = ab.name;
-      nm.appendChild(U.el('small', null, ab.en));
+      nm.textContent = L(ab.name);
+      nm.appendChild(U.el('small', null, I18N.other(ab.name)));
       body.appendChild(nm);
-      body.appendChild(U.el('div', 'book-stats', ab.stats + (ab.minDmg ? ` · ${U.num(ab.minDmg)}–${U.num(ab.maxDmg)} 伤害` : '')));
-      body.appendChild(U.el('div', 'book-desc', ab.desc));
+      body.appendChild(U.el('div', 'book-stats',
+        L(ab.stats) + (ab.minDmg ? ' · ' + T('book.dmg', U.num(ab.minDmg), U.num(ab.maxDmg)) : '')));
+      body.appendChild(U.el('div', 'book-desc', L(ab.desc)));
       li.appendChild(body);
       ul.appendChild(li);
     }
@@ -209,7 +210,7 @@ const UI = {
     const seg = this.d.difficultySeg;
     seg.innerHTML = '';
     CFG.difficulties.forEach((d, i) => {
-      const b = U.el('button', null, d.name);
+      const b = U.el('button', null, L(d.name));
       b.type = 'button';
       b.addEventListener('click', () => this.game.setDifficulty(i));
       seg.appendChild(b);
@@ -218,7 +219,7 @@ const UI = {
 
   syncDifficulty(index) {
     U.$$('button', this.d.difficultySeg).forEach((b, i) => b.classList.toggle('on', i === index));
-    this.d.difficultyDesc.textContent = CFG.difficulties[index].desc;
+    this.d.difficultyDesc.textContent = L(CFG.difficulties[index].desc);
   },
 
   buildFontScale() {
@@ -226,11 +227,46 @@ const UI = {
     if (!seg) return;
     seg.innerHTML = '';
     CFG.uiScales.forEach((s, i) => {
-      const b = U.el('button', null, s.name);
+      const b = U.el('button', null, L(s.name));
       b.type = 'button';
       b.addEventListener('click', () => this.game.setUiScale(i));
       seg.appendChild(b);
     });
+  },
+
+  buildLangSeg() {
+    const seg = this.d.langSeg;
+    if (!seg) return;
+    seg.innerHTML = '';
+    I18N.langs.forEach(l => {
+      const b = U.el('button', null, l.name);
+      b.type = 'button';
+      b.addEventListener('click', () => this.game.setLang(l.id));
+      seg.appendChild(b);
+    });
+  },
+
+  syncLang() {
+    if (this.d.langSeg) {
+      U.$$('button', this.d.langSeg).forEach((b, i) => b.classList.toggle('on', I18N.langs[i].id === I18N.lang));
+    }
+    // 动态生成的节点不受 data-i18n 管，切语言时整批重建
+    this.buildKeyHelp();
+    this.buildSpellbook();
+    U.$$('button', this.d.difficultySeg).forEach((b, i) => { b.textContent = L(CFG.difficulties[i].name); });
+    U.$$('button', this.d.fontSeg).forEach((b, i) => { b.textContent = L(CFG.uiScales[i].name); });
+    U.$$('.slot', this.d.actionBar).forEach(el => {
+      const ab = CFG.ability(el.dataset.id);
+      if (ab) el.title = `${L(ab.name)} (${ab.key})`;
+    });
+    this.syncDifficulty(this.game.difficultyIndex);
+    this.nextTip();
+    // 光环徽章按层数缓存，不含语言 —— 切语言时要主动作废，否则还留着旧语言
+    this.rows.forEach(r => { r._k = null; });
+    if (this.strip) this.strip.forEach(s => { s._k = null; });
+    this._auraKey = null;
+    this._coachKey = null;
+    if (this.d.exitBtn) this.d.exitBtn.title = T('btn.exitTitle');
   },
 
   syncFontScale(index) {
@@ -259,15 +295,23 @@ const UI = {
     // 死亡之影
     if (g.phase === 'debuff') {
       this.d.debuffBanner.hidden = false;
+      // 提示条的实际高度写成变量，教练面板据此让位
+      const vp0 = U.$('#viewport');
+      if (vp0) {
+        vp0.classList.add('debuffing');
+        const dh = this.d.debuffBanner.offsetHeight;
+        if (dh && dh !== this._debuffH) { vp0.style.setProperty('--debuff-h', dh + 'px'); this._debuffH = dh; }
+      }
       const s = Math.ceil(g.debuffLeft);
       this.d.debuffTimer.textContent = s;
       this.d.debuffTimer.classList.toggle('hot', s <= 3);
       const yd = Nav.pathLength(g.player.x, g.player.y) / CFG.YARD;
-      const grade = yd > 42 ? '很好' : yd > 28 ? '还行' : '太近了！';
-      this.d.debuffHint.innerHTML =
-        `距首领 <b>${yd.toFixed(0)}</b> 码 · <b>${grade}</b> —— 跑得越远，之后的输出时间越多`;
+      const grade = T(yd > 42 ? 'debuff.far' : yd > 28 ? 'debuff.ok' : 'debuff.near');
+      this.d.debuffHint.innerHTML = T('debuff.dist', yd.toFixed(0), grade);
     } else {
       this.d.debuffBanner.hidden = true;
+      const vp0 = U.$('#viewport');
+      if (vp0) vp0.classList.remove('debuffing');
     }
 
     // 技能条
@@ -286,6 +330,14 @@ const UI = {
     if (this.d.bossHpFill) {
       const w = 4 + (1 - (g.constructs.length ? g.constructs.filter(c => !c.alive).length / g.constructs.length : 0)) * 8;
       this.d.bossHpFill.style.width = w.toFixed(1) + '%';
+    }
+
+    // 实时提示 / 教学卡片
+    this.updateCoach(g);
+
+    // 退出按钮：只在局内出现
+    if (this.d.exitBtn) {
+      this.d.exitBtn.hidden = !(g.phase === 'debuff' || g.phase === 'fight' || g.phase === 'over');
     }
 
     // 提示轮播
@@ -320,6 +372,66 @@ const UI = {
     }
   },
 
+  updateCoach(g) {
+    const box = this.d.coach;
+    if (!box) return;
+
+    const card = Coach.card(g);
+    let slot = null;
+
+    if (card) {
+      // waiting 必须进 key：等待卡的 index 与下一步卡的 index 相同，漏掉就不会重绘
+      const key = `t|${card.index}|${card.done}|${card.waiting ? 'w' : 's'}|${I18N.lang}`;
+      if (this._coachKey !== key) {
+        this._coachKey = key;
+        box.className = 'coach coach-tutorial' + (card.done || card.waiting ? ' is-done' : '');
+        box.innerHTML =
+          `<div class="coach-step">${card.done ? T('tut.done') : T('tut.step', card.index, card.total)}</div>` +
+          `<div class="coach-title">${card.title}</div>` +
+          `<div class="coach-text">${card.text}</div>`;
+      }
+      box.hidden = false;
+      slot = card.slot;
+      if (card.flash) box.classList.add('is-flash');
+      else box.classList.remove('is-flash');
+
+    } else if (Coach.enabled && g.phase === 'fight') {
+      const a = Coach.advice(g);
+      if (a) {
+        if (this._coachKey !== 'a|' + a.html) {
+          this._coachKey = 'a|' + a.html;
+          box.className = 'coach coach-line';
+          box.innerHTML = `<span class="coach-tag">${T('coach.title')}</span><span class="coach-text">${a.html}</span>`;
+        }
+        box.hidden = false;
+        slot = a.slot;
+      } else {
+        box.hidden = true; this._coachKey = null;
+      }
+    } else {
+      box.hidden = true;
+      this._coachKey = null;
+    }
+
+    // 目标框让位：把教练面板的实际高度写成 CSS 变量
+    const vp = U.$('#viewport');
+    if (vp) {
+      const on = !box.hidden;
+      vp.classList.toggle('has-coach', on);
+      if (on) {
+        const h = box.offsetHeight;
+        if (h && h !== this._coachH) { vp.style.setProperty('--coach-h', h + 'px'); this._coachH = h; }
+      }
+    }
+
+    // 给被推荐的技能格加脉冲高亮（类名不能用 .coach —— 那是浮层类）
+    if (this._coachSlot !== slot) {
+      if (this._coachSlot && this.slots[this._coachSlot]) this.slots[this._coachSlot].el.classList.remove('coach-pick');
+      if (slot && this.slots[slot]) this.slots[slot].el.classList.add('coach-pick');
+      this._coachSlot = slot;
+    }
+  },
+
   drawSweep(ctx, frac) {
     const S = 64;
     ctx.clearRect(0, 0, S, S);
@@ -348,11 +460,11 @@ const UI = {
 
     const eta = t.eta();
     this.d.tfEta.textContent = eta === Infinity
-      ? '已被定身'
-      : `距首领 ${(t.pathRemaining() / CFG.YARD).toFixed(0)} 码 · ${eta.toFixed(0)} 秒`;
+      ? T('tf.rooted')
+      : T('tf.eta', (t.pathRemaining() / CFG.YARD).toFixed(0), eta.toFixed(0));
 
     const dist = U.dist(g.player.x, g.player.y, t.x, t.y) / CFG.YARD;
-    this.d.tfRange.textContent = `距离 ${dist.toFixed(0)} 码`;
+    this.d.tfRange.textContent = T('tf.range', dist.toFixed(0));
     this.d.tfRange.classList.toggle('oor', dist > 30);
 
     // 光环
@@ -383,8 +495,9 @@ const UI = {
       const r = this.rows[i];
       const c = g.constructs[i];
       if (!c) {
-        r.name.textContent = CFG.constructNames[i];
-        r.hpn.textContent = '待命';
+        r.name.textContent = T('construct.full', i + 1);
+        if (r.aplabel) r.aplabel.textContent = T('cst.approach');
+        r.hpn.textContent = T('cst.standby');
         r.hp.style.transform = 'scaleX(1)';
         r.prog.style.transform = 'scaleX(0)';
         r.eta.textContent = '—';
@@ -393,11 +506,12 @@ const UI = {
         continue;
       }
       r.name.textContent = c.name;
+      if (r.aplabel) r.aplabel.textContent = T('cst.approach');
       r.el.classList.toggle('is-dead', !c.alive);
       r.el.classList.toggle('is-target', g.target === c);
 
       if (!c.alive) {
-        r.hpn.textContent = '已消灭';
+        r.hpn.textContent = T('cst.dead');
         r.hp.style.transform = 'scaleX(0)';
         r.prog.style.transform = 'scaleX(0)';
         r.eta.textContent = '—';
@@ -421,8 +535,8 @@ const UI = {
       if (r._k !== key) {
         r._k = key;
         r.auras.innerHTML = '';
-        if (c.slowStacks) r.auras.appendChild(U.el('span', 'aura-pip aura-slow', `减速 ×${c.slowStacks}`));
-        if (c.frozen) r.auras.appendChild(U.el('span', 'aura-pip aura-root', '定身'));
+        if (c.slowStacks) r.auras.appendChild(U.el('span', 'aura-pip aura-slow', T('cst.slow', c.slowStacks)));
+        if (c.frozen) r.auras.appendChild(U.el('span', 'aura-pip aura-root', T('cst.root')));
       }
     }
   },
@@ -480,7 +594,8 @@ const UI = {
 
   nextTip() {
     if (!this.d.tipText) return;
-    this.d.tipText.innerHTML = CFG.tips[this.tipIndex % CFG.tips.length];
+    const tips = L(CFG.tips);
+    this.d.tipText.innerHTML = tips[this.tipIndex % tips.length];
     this.tipIndex++;
   },
 
@@ -509,16 +624,16 @@ const UI = {
     const screen = this.d.resultScreen;
     screen.classList.toggle('lost', !won);
 
-    U.$('#resultKicker').textContent = won ? '灵魂阶段 · 完成' : '灵魂阶段 · 失败';
-    U.$('#resultTitle').textContent = won ? '四只构造体全部消灭' : '构造体冲进了团队';
-    U.$('#resultFlavor').textContent = U.pick(won ? CFG.winFlavor : CFG.loseFlavor);
+    U.$('#resultKicker').textContent = T(won ? 'result.kickerWin' : 'result.kickerLose');
+    U.$('#resultTitle').textContent = T(won ? 'result.win' : 'result.lose');
+    U.$('#resultFlavor').textContent = U.pick(L(won ? CFG.winFlavor : CFG.loseFlavor));
 
     const gradeBox = U.$('#resultGrade');
-    if (won && !g.practice) {
+    if (won && !g.noRecord) {
       const grade = CFG.gradeFor(g.fightTime, g.difficulty);
       gradeBox.hidden = false;
       U.$('.grade-letter', gradeBox).textContent = grade.letter;
-      U.$('.grade-word', gradeBox).textContent = grade.word;
+      U.$('.grade-word', gradeBox).textContent = L(grade.word);
     } else {
       gradeBox.hidden = true;
     }
@@ -526,13 +641,13 @@ const UI = {
     const timeBox = U.$('#resultTime');
     if (won) {
       const isPB = g.newBest;
-      timeBox.innerHTML = `用时 <b>${U.secs(g.fightTime)}</b> 秒` +
-        (g.practice ? '<span class="pb" style="color:var(--ink-faint)">训练模式 · 不计入记录</span>'
-          : isPB ? '<span class="pb">新纪录！</span>'
-            : (g.best ? `<span class="pb" style="color:var(--ink-faint)">最佳 ${U.secs(g.best)} 秒</span>` : ''));
+      timeBox.innerHTML = T('result.time', U.secs(g.fightTime)) +
+        (g.noRecord ? `<span class="pb" style="color:var(--ink-faint)">${T('result.practice')}</span>`
+          : isPB ? `<span class="pb">${T('result.pb')}</span>`
+            : (g.best ? `<span class="pb" style="color:var(--ink-faint)">${T('result.bestWas', U.secs(g.best))}</span>` : ''));
     } else {
-      const breaker = g.breaker ? g.breaker.name : '构造体';
-      timeBox.innerHTML = `坚持了 <b>${U.secs(g.fightTime)}</b> 秒　·　${breaker} 抵达了首领`;
+      const breaker = g.breaker ? g.breaker.name : T('rail.constructs');
+      timeBox.innerHTML = T('result.survived', U.secs(g.fightTime), breaker);
     }
 
     // 记分板
@@ -544,20 +659,20 @@ const UI = {
       tr.appendChild(U.el('td', null, b));
       tb.appendChild(tr);
     };
-    row('项目', '数值', 'head');
+    row(T('result.colItem'), T('result.colValue'), 'head');
     g.constructs.forEach(c => {
       row(c.name, c.killedAt != null
-        ? `${U.secs(c.killedAt)} 秒击杀`
-        : `剩余 ${Math.ceil(c.hpPct * 100)}%`);
+        ? T('result.killedAt', U.secs(c.killedAt))
+        : T('result.remaining', Math.ceil(c.hpPct * 100)));
     });
     const dps = g.fightTime > 0 ? g.stats.damage / g.fightTime : 0;
-    row('总伤害', U.num(g.stats.damage));
-    row('每秒伤害', U.num(dps));
-    row('施法次数', `${g.stats.casts} 次`);
-    row('空转 GCD', `${Math.floor(g.stats.idle / CFG.gcd)} 次（浪费 ${U.secs(g.stats.idle, 1)} 秒）`);
-    row('灵魂之枪 / 乱射', `${g.stats.byId.lance || 0} / ${g.stats.byId.volley || 0}`);
-    if (g.practice) row('漏过首领', `${g.stats.leaks} 次`);
-    row('难度', g.difficulty.name + (g.practice ? ' · 训练模式' : ''));
+    row(T('result.totalDmg'), U.num(g.stats.damage));
+    row(T('result.dps'), U.num(dps));
+    row(T('result.casts'), T('result.castsN', g.stats.casts));
+    row(T('result.idle'), T('result.idleN', Math.floor(g.stats.idle / CFG.gcd), U.secs(g.stats.idle, 1)));
+    row(T('result.lanceVolley'), `${g.stats.byId.lance || 0} / ${g.stats.byId.volley || 0}`);
+    if (g.forgiving) row(T('result.leaks'), T('result.leaksN', g.stats.leaks));
+    row(T('result.mode'), L(g.difficulty.name) + (g.practice ? ' · ' + T('opt.practice') : ''));
 
     this.show('resultScreen');
   },

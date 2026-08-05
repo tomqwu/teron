@@ -20,7 +20,7 @@ const Game = {
   cooldowns: {},
   stats: null,
 
-  difficultyIndex: 1,
+  difficultyIndex: 0,
   uiScaleIndex: 1,
   practice: false,
   azerty: false,
@@ -34,6 +34,10 @@ const Game = {
 
   get now() { return this.clock; },
   get difficulty() { return CFG.difficulties[this.difficultyIndex]; },
+  /** 构造体抵达首领不判负：训练模式，或教学档 */
+  get forgiving() { return this.practice || !!this.difficulty.forgiving; },
+  /** 不计入个人最佳 */
+  get noRecord() { return this.practice || !!this.difficulty.tutorial; },
 
   /* ── 初始化 ───────────────────────── */
 
@@ -43,15 +47,28 @@ const Game = {
     Art.init();
     Nav.build();
 
-    this.difficultyIndex = U.store.get('difficulty', 1);
+    // 语言：默认跟随浏览器
+    const guess = (navigator.language || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+    I18N.lang = U.store.get('lang', guess) === 'en' ? 'en' : 'zh';
+    document.documentElement.lang = I18N.lang === 'en' ? 'en' : 'zh-CN';
+    document.title = T('meta.title');
+    I18N.apply();
+
+    // 难度按 id 存，加档位时不会串
+    const wantId = U.store.get('difficultyId', 'tutorial');
+    const di = CFG.difficulties.findIndex(d => d.id === wantId);
+    this.difficultyIndex = di >= 0 ? di : 0;
+
     this.uiScaleIndex = U.clamp(U.store.get('uiScale', 1), 0, CFG.uiScales.length - 1);
     this.applyUiScale();
     this.practice = U.store.get('practice', false);
     this.azerty = U.store.get('azerty', false);
+    Coach.enabled = U.store.get('coach', true);
     const soundOn = U.store.get('sound', true);
 
     U.$('#optPractice').checked = this.practice;
     U.$('#optAzerty').checked = this.azerty;
+    U.$('#optCoach').checked = Coach.enabled;
     U.$('#optSound').checked = soundOn;
     Sfx.enabled = soundOn;
 
@@ -59,6 +76,7 @@ const Game = {
     UI.init(this);
     UI.syncDifficulty(this.difficultyIndex);
     UI.syncFontScale(this.uiScaleIndex);
+    UI.syncLang();
     this.loadBest();
 
     this.bindDOM();
@@ -77,9 +95,16 @@ const Game = {
 
   setDifficulty(i) {
     this.difficultyIndex = i;
-    U.store.set('difficulty', i);
+    U.store.set('difficultyId', CFG.difficulties[i].id);
     UI.syncDifficulty(i);
     this.loadBest();
+  },
+
+  setLang(id) {
+    U.store.set('lang', id);
+    I18N.setLang(id);
+    UI.syncLang();
+    requestAnimationFrame(() => this.resize());
   },
 
   applyUiScale() {
@@ -115,6 +140,10 @@ const Game = {
     U.$('#optSound').addEventListener('change', e => {
       Sfx.setEnabled(e.target.checked); U.store.set('sound', e.target.checked);
     });
+    U.$('#optCoach').addEventListener('change', e => {
+      Coach.enabled = e.target.checked; U.store.set('coach', Coach.enabled);
+    });
+    U.$('#btnExit').addEventListener('click', () => this.toTitle());
   },
 
   /* ── 局内重置 ─────────────────────── */
@@ -133,6 +162,7 @@ const Game = {
     this.stats = { casts: 0, damage: 0, idle: 0, leaks: 0, byId: {} };
     this.input.left = this.input.right = this.input.up = this.input.down = 0;
     FX.reset();
+    Coach.reset();
     if (!keepPhase) this.phase = 'title';
   },
 
@@ -148,9 +178,9 @@ const Game = {
 
     Sfx.play('aggro');
     Sfx.startAmbient();
-    UI.callout('死亡之影！');
-    UI.log('塔隆·血魔对你施放了 <b>死亡之影</b>', 'warn');
-    UI.log('立刻远离首领，构造体会在你倒下处生成', 'warn');
+    UI.callout(T('callout.debuff'));
+    UI.log(T('log.debuffOn'), 'warn');
+    UI.log(T('log.runAway'), 'warn');
     UI.setBest(this.best);
   },
 
@@ -204,8 +234,8 @@ const Game = {
     Sfx.play('playerDeath');
     Sfx.play('spawn');
 
-    UI.callout('你倒下了 —— 四只构造体出现');
-    UI.log('你化为幽魂，<b>4 只构造体</b>已出现', 'warn');
+    UI.callout(T('callout.spawn'));
+    UI.log(T('log.becameGhost'), 'warn');
     this.setTarget(this.mostUrgent(), true);
   },
 
@@ -261,9 +291,9 @@ const Game = {
     const state = this.usability(ab);
 
     if (state !== 'ok') {
-      if (state === 'notarget') UI.log('你没有目标', 'warn');
-      else if (state === 'oor') UI.log(`${ab.name}：距离太远`, 'warn');
-      else if (state === 'cd') UI.log(`${ab.name}：还没冷却好`, 'warn');
+      if (state === 'notarget') UI.log(T('log.noTarget'), 'warn');
+      else if (state === 'oor') UI.log(T('log.tooFar', L(ab.name)), 'warn');
+      else if (state === 'cd') UI.log(T('log.onCd', L(ab.name)), 'warn');
       if (state !== 'gcd') Sfx.play('error');
       return;
     }
@@ -274,7 +304,7 @@ const Game = {
     this.stats.byId[ab.id] = (this.stats.byId[ab.id] || 0) + 1;
 
     UI.flashSlot(ab.id);
-    UI.castFlash(ab.name);
+    UI.castFlash(L(ab.name));
     Sfx.play('cast_' + ab.id);
 
     switch (ab.id) {
@@ -296,14 +326,14 @@ const Game = {
     FX.burst(c.x, c.y, { n: kind === 'big' ? 14 : 7, color: '255,225,150', speed0: 30, speed1: 120, life0: .2, life1: .45, r0: 1, r1: 2.4 });
     Sfx.play(kind === 'big' ? 'impact_big' : 'impact');
     if (!c.alive) {
-      UI.log(`<span class="kill">${c.shortName} 已消灭</span>`, '');
+      UI.log(T('log.killed', c.shortName), '');
       if (this.target === c) this.setTarget(this.mostUrgent(), true);
     }
   },
 
   castStrike(ab) {
     const t = this.target;
-    UI.log(`<span class="cast">${ab.name}</span> → ${t.shortName}`, '');
+    UI.log(T('log.cast', L(ab.name), t.shortName), '');
     const a = Math.atan2(t.y - this.player.y, t.x - this.player.x);
     FX.burst(t.x, t.y, { n: 12, color: '255,180,220', angle: a, speed0: 60, speed1: 180, life0: .15, life1: .4 });
     this.hit(t, this.roll(ab), 'small');
@@ -311,7 +341,7 @@ const Game = {
 
   castLance(ab) {
     const t = this.target;
-    UI.log(`<span class="cast">${ab.name}</span> → ${t.shortName}`, '');
+    UI.log(T('log.cast', L(ab.name), t.shortName), '');
     FX.bolt(this.player.x, this.player.y, t, ab.travel, '111,227,245', () => {
       if (!t.alive) return;
       t.applySlow(ab, this.clock);
@@ -324,8 +354,8 @@ const Game = {
     const R = ab.range * CFG.YARD;
     FX.ring(this.player.x, this.player.y, 6, R, '165,102,240', .55, 4);
     const hits = this.aliveList().filter(c => U.dist(this.player.x, this.player.y, c.x, c.y) <= R);
-    UI.log(`<span class="cast">${ab.name}</span> · 命中 ${hits.length} 个`, '');
-    if (!hits.length) UI.log('灵魂锁链 · 未命中', 'warn');
+    UI.log(T('log.castAoe', L(ab.name), hits.length), '');
+    if (!hits.length) UI.log(T('log.noHit', L(ab.name)), 'warn');
     for (const c of hits) {
       // 先结算伤害，再上定身 —— 否则会被自己的伤害立刻打断
       this.hit(c, this.roll(ab), 'small');
@@ -341,8 +371,8 @@ const Game = {
     FX.ring(this.player.x, this.player.y, 6, R, '57,230,184', .5, 3);
     FX.kick(4);
     const hits = this.aliveList().filter(c => U.dist(this.player.x, this.player.y, c.x, c.y) <= R);
-    UI.log(`<span class="cast">${ab.name}</span> · 命中 ${hits.length} 个`, '');
-    if (!hits.length) UI.log('灵魂乱射 · 未命中', 'warn');
+    UI.log(T('log.castAoe', L(ab.name), hits.length), '');
+    if (!hits.length) UI.log(T('log.noHit', L(ab.name)), 'warn');
     for (const c of hits) {
       FX.bolt(this.player.x, this.player.y, c, ab.travel, '57,230,184', () => {
         if (c.alive) this.hit(c, this.roll(ab), 'big');
@@ -351,7 +381,7 @@ const Game = {
   },
 
   castShield(ab) {
-    UI.log(`<span class="cast">${ab.name}</span> · 本模拟中无效果`, '');
+    UI.log(T('log.shieldNoop', L(ab.name)), '');
     FX.ring(this.player.x, this.player.y, 4, 34, '143,180,255', .5, 3);
   },
 
@@ -362,6 +392,7 @@ const Game = {
 
     this.clock += dt;
     FX.update(dt);
+    Coach.update(this, dt);
 
     if (this.phase === 'debuff') {
       this.player.update(dt, this.input);
@@ -395,7 +426,7 @@ const Game = {
       // 首领随机喊话
       if (this.fightTime > this.bossLineAt) {
         this.bossLineAt = this.fightTime + U.rand(11, 18);
-        UI.log(`<b>血魔</b>：${U.pick(CFG.bossLines)}`, 'warn');
+        UI.log(T('log.bossSays', U.pick(L(CFG.bossLines))), 'warn');
       }
 
       this.checkEnd();
@@ -412,7 +443,7 @@ const Game = {
     const B = CFG.arena.boss;
     for (const c of this.aliveList()) {
       if (U.dist(c.x, c.y, B.x, B.y) < CFG.arena.reachRadius) {
-        if (this.practice) {
+        if (this.forgiving) {
           // 训练模式：推回门口继续练
           this.stats.leaks++;
           const w = CFG.arena.waypoints[0];
@@ -421,7 +452,7 @@ const Game = {
           Nav.resolve(c);
           c.startPath = Nav.pathLength(c.x, c.y);
           FX.ring(B.x, B.y, 8, 70, '220,60,50', .6, 4);
-          UI.log(`<span class="warn">${c.shortName} 漏过首领</span> · 已推回门口（第 ${this.stats.leaks} 次）`, '');
+          UI.log(T('log.leaked', c.shortName, this.stats.leaks), '');
           Sfx.play('error');
         } else {
           this.breaker = c;
@@ -441,7 +472,7 @@ const Game = {
     Sfx.play(won ? 'win' : 'lose');
     FX.kick(won ? 5 : 10);
 
-    if (won && !this.practice) {
+    if (won && !this.noRecord) {
       const key = 'best.' + this.difficulty.id;
       const prev = U.store.get(key, null);
       if (prev == null || this.fightTime < prev) {
@@ -452,8 +483,7 @@ const Game = {
       }
     }
 
-    UI.log(won ? '<span class="kill">全部构造体已消灭 —— 团队幸存</span>'
-                : '<span class="warn">构造体抵达首领 —— 团队全灭</span>', '');
+    UI.log(T(won ? 'log.won' : 'log.lost'), '');
 
     setTimeout(() => { if (this.phase === 'over') UI.showResult(won, this); }, won ? 900 : 1100);
   },

@@ -155,8 +155,6 @@ class Player {
 class Construct {
   constructor(index, x, y, speedMul) {
     this.index = index;
-    this.name = CFG.constructNames[index];
-    this.shortName = '构造体 ' + (index + 1);   // 战斗记录用，避免每条都折行
     this.x = x; this.y = y;
     this.radius = CFG.construct.radius;
     this.maxHP = CFG.construct.maxHP;
@@ -176,6 +174,11 @@ class Construct {
     this.damageTaken = 0;
     this.killedAt = null;
   }
+
+  /* 名字用取值器：局内切换语言时列表和结算会立刻跟着变 */
+  get name() { return T('construct.full', this.index + 1); }
+  /** 战斗记录用的短名，避免每条都折行 */
+  get shortName() { return T('construct.short', this.index + 1); }
 
   get speed() {
     if (this.frozen) return 0;
@@ -230,7 +233,7 @@ class Construct {
       life0: .45, life1: 1.1, r0: 1.4, r1: 3.6
     });
     FX.ring(this.x, this.y, 6, 46, '190,140,255', .55, 3);
-    FX.label(this.x, this.y - 6, '已消灭', '#8bf04a');
+    FX.label(this.x, this.y - 6, T('fx.killed'), '#8bf04a');
     Sfx.play('death');
   }
 
