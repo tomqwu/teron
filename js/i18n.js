@@ -103,10 +103,10 @@ const I18N = {
     'title.howto':     { zh: '你要做的事', en: 'What you actually do' },
     'title.howto1':    { zh: '拿到死亡之影就<b>往下跑</b>，跑到大厅最深处再倒下。',
                          en: '<b>Run</b> the moment you get the debuff. Die as deep in the hall as you can.' },
-    'title.howto2':    { zh: '倒下后先别管伤害，按 <kbd>3</kbd> 给四只<b>各叠满 3 层减速</b>（<kbd>Tab</kbd> 切目标）。',
-                         en: 'Forget damage at first. Press <kbd>3</kbd> to stack <b>3 slows on each</b> of the four (<kbd>Tab</kbd> to switch).' },
-    'title.howto3':    { zh: '它们挤成一堆时按 <kbd>5</kbd> <b>灵魂乱射</b>，这是唯一的高伤害群体技能。',
-                         en: 'When they clump up, press <kbd>5</kbd> for <b>Spirit Volley</b> — your only real AoE.' },
+    'title.howto2':    { zh: '倒下瞬间四只全叠在你身上 —— 先按 <kbd>5</kbd> <b>灵魂乱射</b>，这是全场唯一保证打满四个的一发。',
+                         en: 'The instant you drop, all four are stacked on you — open with <kbd>5</kbd> <b>Spirit Volley</b>, the only cast guaranteed to hit all four.' },
+    'title.howto3':    { zh: '然后按 <kbd>3</kbd> 给四只<b>各叠满 3 层减速</b>（<kbd>Tab</kbd> 切目标）。',
+                         en: 'Then press <kbd>3</kbd> to stack <b>3 slows on each</b> of the four (<kbd>Tab</kbd> to switch).' },
     'title.howto4':    { zh: '减速只有 9 秒，<b>快掉了就补枪</b>。补枪本身也是伤害，不亏。',
                          en: 'The slow lasts 9s. <b>Refresh before it drops</b> — a refresh is damage too, nothing is wasted.' },
     'title.howtoWhy':  { zh: '为什么？满速的构造体 13 秒就能走到首领，你根本打不完 26 万血。三层减速让它们慢 90% —— 减速才是这场战斗的核心，伤害是顺带的。',
@@ -148,12 +148,16 @@ const I18N = {
     'book.strategy':   { zh: '核心思路', en: 'The Plan' },
     'book.s1':         { zh: '拿到<b>死亡之影</b>后立刻朝远离首领的方向狂奔 —— 你跑出的每一码都是之后的输出时间。',
                          en: 'Sprint away from the boss the instant you get <b>Shadow of Death</b> — every yard is casting time later.' },
-    'book.s2':         { zh: '开局先给四只构造体各叠满 <b>3 层灵魂之枪</b>（减速 90%），它们几乎会原地爬行。',
-                         en: 'Open by stacking <b>3× Spirit Lance</b> on all four (90% slow). They will barely crawl.' },
-    'book.s3':         { zh: '把它们聚在一起后用<b>灵魂乱射</b>，这是唯一的高伤害 AoE。',
-                         en: 'Once they clump, use <b>Spirit Volley</b> — your only high-damage AoE.' },
-    'book.s4':         { zh: '<b>灵魂锁链</b>只在你需要抢时间时用 —— 任何伤害都会打断定身。',
-                         en: 'Save <b>Spirit Chains</b> for when you need seconds — any damage breaks the root.' },
+    'book.s2':         { zh: '开场四只全叠在你倒下的位置 —— 先 <b>5 灵魂乱射</b>，这是整局唯一保证打满四个的一发。',
+                         en: 'They all spawn stacked on your corpse — open with <b>5 Spirit Volley</b>, the one cast all fight that is guaranteed to hit four.' },
+    'book.s3':         { zh: '接着用 <b>3 灵魂之枪</b>给四只各叠满 3 层（减速 90%），它们几乎会原地爬行。',
+                         en: 'Then stack <b>3× Spirit Lance</b> on all four (90% slow). They will barely crawl.' },
+    'book.s4':         { zh: '<b>灵魂锁链是保险，不是输出</b>：多花的这一个公共冷却实测让通关慢 1 秒，'
+                           + '所以死得太靠前、或有人快摸到首领时才用。要用就趁它们满速时用。'
+                           + '它自身的伤害不会打断自己，但<b>之后任何伤害都会</b>。',
+                         en: '<b>Chains is insurance, not damage</b>: that extra GCD measurably costs ~1s on your clear, '
+                           + 'so save it for a bad death position or an add about to arrive — and use it while they are still fast. '
+                           + 'It does not break its own root, but <b>any later damage does</b>.' },
     'book.s5':         { zh: '减速快掉了就补枪：<b>宁可少打一次伤害，也不能让减速掉光</b>。',
                          en: 'Refresh before the slow falls off: <b>losing the slow costs far more than one lost cast</b>.' },
     'book.dmg':        { zh: '{0}–{1} 伤害', en: '{0}–{1} damage' },
@@ -254,6 +258,8 @@ const I18N = {
                          en: '{0} in range — press <kbd>5</kbd> for Spirit Volley' },
     'coach.volleyWait':{ zh: '乱射好了，但只能打到 {0} 个 —— 靠近它们再放',
                          en: 'Volley is up but only hits {0} — get closer before you use it' },
+    'coach.chainsOpen':{ zh: '你死得偏靠前 —— 趁它们满速按 <kbd>4</kbd> 锁链把时间抢回来',
+                         en: 'You died a bit close — press <kbd>4</kbd> Chains now, while they are still at full speed' },
     'coach.chains':    { zh: '{0} 快到首领了 —— 按 <kbd>4</kbd> 定住它',
                          en: '{0} is nearly there — press <kbd>4</kbd> to root it' },
     'coach.getCloser': { zh: '超出 30 码了 —— 朝构造体跑近一点',
@@ -277,9 +283,18 @@ const I18N = {
     'tut.lance3.t':    { zh: '叠满三层', en: 'Stack to three' },
     'tut.lance3.d':    { zh: '继续补枪，把每只都叠到 <b>3 层</b>。三层 = 减速 90%，它们会从 13 秒变成两分钟。',
                          en: 'Keep lancing until each has <b>3 stacks</b>. Three stacks = 90% slow — their 13-second walk becomes two minutes.' },
-    'tut.volley.t':    { zh: '放一次乱射', en: 'Land a Volley' },
-    'tut.volley.d':    { zh: '被减速后它们会挤成一堆。等 3 只以上进到你脚下的绿圈里，按 <kbd>5</kbd> 灵魂乱射。',
-                         en: 'Slowed, they bunch up. Wait until 3+ are inside the green circle at your feet, then press <kbd>5</kbd> for Spirit Volley.' },
+    'tut.opener.t':    { zh: '开场：先按 5', en: 'Open with 5' },
+    'tut.opener.d':    { zh: '四只刚从你身上爬出来，全部叠在一起 —— 这是整局<b>最好的一次灵魂乱射</b>。'
+                           + '现在按 <kbd>5</kbd>，一发打满四个约 4.4 万伤害。',
+                         en: 'All four just rose out of you and are stacked on the same spot — this is the '
+                           + '<b>best Volley you will get all fight</b>. Press <kbd>5</kbd> now: four targets, about 44k damage.' },
+    'tut.chains.t':    { zh: '按一次 4，认识锁链', en: 'Try 4 — meet Chains' },
+    'tut.chains.d':    { zh: '按 <kbd>4</kbd> 灵魂锁链感受一下。它是<b>保险，不是输出</b>：'
+                           + '满速时 5 秒定身能拦下 17 码，叠满减速后同样 5 秒只值 1.7 码 —— 要用就趁早。'
+                           + '但如果你跑得够远、稳稳能打完，这一秒公共冷却拿去补枪反而更快。',
+                         en: 'Press <kbd>4</kbd> Spirit Chains to feel it out. It is <b>insurance, not damage</b>: '
+                           + 'at full speed a 5s root denies 17 yards, but once they are slowed the same root is worth 1.7 — '
+                           + 'so if you use it, use it early. If you ran far and the kill is safe, that GCD is faster spent on a lance.' },
     'tut.sustain.t':   { zh: '维持减速，清掉它们', en: 'Sustain and finish' },
     'tut.sustain.d':   { zh: '减速只有 <b>9 秒</b>。盯着列表里的层数，快掉了就补枪 —— 补枪本身也是 6500 伤害，一点都不亏。把四只全部消灭。',
                          en: 'The slow lasts <b>9 seconds</b>. Watch the stacks and refresh before they drop — a refresh is also 6,500 damage, so nothing is lost. Now finish all four.' },
